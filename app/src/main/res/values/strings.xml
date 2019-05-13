@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Base</string>
+
+    <string name="common_error_report">Send error report</string>
+    <string name="common_send_feedback">Send feedback</string>
+
+    <string name="intent_send_error_report_chooser_title">Select an application to send error report</string>
+    <string name="intent_send_error_report_subject">Send Error report</string>
+    <string name="intent_send_error_report_text">Please, describe the problem you encountered.</string>
+
+    <string name="intent_send_feedback_chooser_title">Select an application to send feedback</string>
+    <string name="intent_send_feedback_subject">Send Feedback</string>
+    <string name="intent_send_feedback_text">Please, share with us your impressions of the app.</string>
+</resources>

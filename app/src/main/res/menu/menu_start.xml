@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/send_error_report"
+        android:icon="@drawable/ic_feedback"
+        android:title="@string/common_error_report"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/send_feedback"
+        android:title="@string/common_send_feedback"
+        app:showAsAction="never" />
+</menu>

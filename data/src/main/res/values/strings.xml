@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_unknown_error">Oops, an error occurred. We will fix it soon</string>
+    <string name="error_connection_error">Please, check your connection and try again later</string>
+    <string name="error_http_error">Please, try again later</string>
+</resources>

@@ -1,0 +1,202 @@
+ext {
+    IS_CI = System.getenv("CI") == "true"
+}
+
+apply plugin: 'com.android.application'
+
+apply plugin: 'kotlin-android'
+
+apply plugin: 'kotlin-android-extensions'
+
+apply plugin: 'kotlin-kapt'
+
+// Crashlitics
+apply plugin: 'io.fabric'
+
+// Epoxy requirement
+kapt {
+    correctErrorTypes = true
+}
+
+apply plugin: 'com.getkeepsafe.dexcount'
+dexcount {
+    // Only run the method counter on CI
+    enabled = IS_CI
+}
+
+// Move it to separate file
+def appVersionCode = propOrDef("VERSION_CODE", 1) as Integer
+def isUserBuild = propOrDef("IS_USER_BUILD", false) as Boolean
+def commitHash = ""
+def buildTime = ""
+if (isUserBuild) {
+    commitHash = getGitHash()
+    buildTime = new GregorianCalendar().format("MM-dd-yyyy_hh-mm-ss-SSS z (Z)")
+
+    println("Build veriables: ")
+    println("The app version code: " + appVersionCode)
+    println("Hash: " + commitHash)
+    println("buildTime: " + buildTime)
+}
+
+def getGitHash() {
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'rev-parse', '--short', 'HEAD'
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
+}
+
+android {
+    compileSdkVersion buildConfig.compileSdk
+    defaultConfig {
+        applicationId "app.base"
+        minSdkVersion buildConfig.minSdk
+        targetSdkVersion buildConfig.targetSdk
+        versionCode appVersionCode
+        versionName "0.1.0"
+        resConfigs "en"
+
+        buildConfigField "boolean", "IS_CI_BUILD", "${IS_CI}"
+    }
+
+    signingConfigs {
+        debug {
+            storeFile rootProject.file("util/signings/debug.keystore")
+        }
+    }
+
+    buildTypes {
+        debug {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro', 'debug-proguard-rules.pro'
+            versionNameSuffix "-dev"
+            applicationIdSuffix ".debug"
+            signingConfig signingConfigs.debug
+            ext.enableCrashlytics = false
+
+            buildConfigField "String", "COMMIT_SHA", "\"\""
+            buildConfigField "String", "BUILD_TIME", "\"\""
+        }
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro', 'release-proguard-rules.pro'
+            ext.betaDistributionEmailsFilePath = "./util/testers_list/testers_list_release.txt"
+
+            buildConfigField "String", "COMMIT_SHA", "\"${commitHash}\""
+            buildConfigField "String", "BUILD_TIME", "\"${buildTime}\""
+        }
+        staging {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro', 'release-proguard-rules.pro'
+            versionNameSuffix "-staging"
+            applicationIdSuffix ".staging"
+            //TODO: create separate signing for staging
+            signingConfig signingConfigs.debug
+            ext.betaDistributionEmailsFilePath = "./util/testers_list/testers_list_staging.txt"
+
+            buildConfigField "String", "COMMIT_SHA", "\"${commitHash}\""
+            buildConfigField "String", "BUILD_TIME", "\"${buildTime}\""
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    dexOptions {
+        // Don't pre-dex on CI
+        preDexLibraries !IS_CI
+    }
+
+    dataBinding {
+        enabled = true
+    }
+
+    // TODO: it's hotfic for bug https://github.com/google/dagger/issues/1245. Remove when we'll get stable solution
+    configurations.all {
+        resolutionStrategy.force "com.android.tools.build.jetifier:jetifier-core:1.0.0-beta02"
+        resolutionStrategy.force "org.jetbrains.kotlinx:kotlinx-coroutines-core:${versions.coroutines}"
+        resolutionStrategy.force "androidx.paging:paging-runtime-ktx:${versions.androidx.paging}"
+    }
+}
+
+dependencies {
+    implementation project(':base-kotlin')
+    implementation project(':base-android')
+    implementation project(':domain')
+    implementation project(':data')
+
+    // Kotlin
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${versions.kotlin}"
+    implementation "org.jetbrains.kotlin:kotlin-reflect:${versions.kotlin}"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-rx2:${versions.coroutines}"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:${versions.coroutines}"
+    // AndroidX
+    implementation "androidx.appcompat:appcompat:${versions.androidx.appcompat}"
+    implementation "androidx.constraintlayout:constraintlayout:${versions.androidx.constraint_layout}"
+    implementation "com.google.android.material:material:${versions.material}"
+    implementation "androidx.emoji:emoji:${versions.androidx.emoji}"
+    // AndroidX.Lifecycle
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:${versions.androidx.lifecycle}"
+    // We have our own implementation for viewmodel's coroutine scope
+//    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:${versions.androidx.lifecycle}"
+    implementation "androidx.lifecycle:lifecycle-extensions:${versions.androidx.lifecycle}"
+    implementation "androidx.lifecycle:lifecycle-reactivestreams:${versions.androidx.lifecycle}"
+    kapt "androidx.lifecycle:lifecycle-compiler:${versions.androidx.lifecycle}"
+    // Androidx.Paging
+    implementation "androidx.paging:paging-rxjava2:${versions.androidx.paging}"
+    implementation "androidx.paging:paging-runtime:${versions.androidx.paging}"
+    // Room
+    implementation "androidx.room:room-runtime:${versions.androidx.room}"
+    // Rx
+    implementation "io.reactivex.rxjava2:rxjava:${versions.rxjava}"
+    implementation "io.reactivex.rxjava2:rxandroid:${versions.rxandroid}"
+    implementation "io.reactivex.rxjava2:rxkotlin:${versions.rxkotlin}"
+    implementation "nl.littlerobots.rxlint:rxlint:${versions.rxlint}"
+    // MvRx/Epoxy
+    implementation "com.airbnb.android:mvrx:${versions.mvrx}"
+    implementation "com.airbnb.android:epoxy:${versions.epoxy}"
+    implementation "com.airbnb.android:epoxy-databinding:${versions.epoxy}"
+    implementation "com.airbnb.android:epoxy-paging:${versions.epoxy}"
+    kapt "com.airbnb.android:epoxy-processor:${versions.epoxy}"
+    // Crashlytics
+    implementation "com.crashlytics.sdk.android:crashlytics:${versions.crashlytics}"
+    // Logger
+    implementation "io.github.microutils:kotlin-logging:${versions.kotlin_logging}"
+    debugImplementation "com.github.tony19:logback-android:${versions.logback}"
+    stagingImplementation "com.github.tony19:logback-android:${versions.logback}"
+    // DI
+    implementation "org.koin:koin-core:${versions.koin}"
+    implementation "org.koin:koin-core-ext:${versions.koin}"
+    implementation "org.koin:koin-android:${versions.koin}"
+    implementation "org.koin:koin-androidx-scope:${versions.koin}"
+    // Retrofit
+    implementation "com.squareup.retrofit2:retrofit:${versions.retrofit}"
+    implementation "com.squareup.retrofit2:converter-gson:${versions.retrofit}"
+    implementation "com.squareup.retrofit2:adapter-rxjava2:${versions.retrofit}"
+    implementation "com.squareup.okhttp3:okhttp:${versions.okhttp}"
+    implementation "com.squareup.okhttp3:logging-interceptor:${versions.okhttp}"
+    //GSON
+    implementation "com.google.code.gson:gson:${versions.gson}"
+    // LeakCanary
+    //TODO: Update to version 2.0.0
+    debugImplementation "com.squareup.leakcanary:leakcanary-android:${versions.leakcanary}"
+    debugImplementation "com.squareup.leakcanary:leakcanary-support-fragment:${versions.leakcanary}"
+    stagingImplementation "com.squareup.leakcanary:leakcanary-android:${versions.leakcanary}"
+    stagingImplementation "com.squareup.leakcanary:leakcanary-support-fragment:${versions.leakcanary}"
+    releaseImplementation "com.squareup.leakcanary:leakcanary-android-no-op:${versions.leakcanary}"
+    // Time
+    implementation "com.jakewharton.threetenabp:threetenabp:${versions.threetenabp}"
+    // Glide
+    implementation "com.github.bumptech.glide:glide:${versions.glide}"
+    kapt "com.github.bumptech.glide:compiler:${versions.glide}"
+    compile "com.github.bumptech.glide:okhttp3-integration:${versions.glide}"
+    // Stetho
+    debugImplementation "com.facebook.stetho:stetho:${versions.stetho}"
+    debugImplementation "com.facebook.stetho:stetho-okhttp3:${versions.stetho}"
+}
