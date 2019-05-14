@@ -24,7 +24,7 @@ class StartViewModel(
 ) : BaseViewModel<StartState>(initState, log) {
     override fun getErrorProperty(): KProperty1<StartState, LocalizedException?> = StartState::error
 
-    override fun StartState.copyWithError(localizedException: LocalizedException?): StartState = copy(error = localizedException)
+    override fun StartState.copyWithError(localizedException: LocalizedException?) = copy(error = localizedException)
 
     companion object : MvRxViewModelFactory<StartViewModel, StartState> {
         override fun create(viewModelContext: ViewModelContext, state: StartState): StartViewModel? {
