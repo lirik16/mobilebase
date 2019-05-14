@@ -1,7 +1,6 @@
 package mdev.mobile.app.util.logger
 
 import android.util.Log
-import androidx.annotation.Keep
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.PatternLayout
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder
@@ -27,14 +26,14 @@ class LogcatAppenderWithoutTag : UnsynchronizedAppenderBase<ILoggingEvent>() {
      * activates this appender.
      */
     override fun start() {
-        if (this.encoder == null || this.encoder!!.layout == null) {
+        if (encoder?.layout == null) {
             addError("No layout set for the appender named [$name].")
             return
         }
 
         // tag encoder is optional but needs a layout
-        if (this.tagEncoder != null) {
-            val layout = this.tagEncoder!!.layout
+        tagEncoder?.let {
+            val layout = it.layout
 
             if (layout == null) {
                 addError("No tag layout set for the appender named [$name].")
@@ -44,11 +43,11 @@ class LogcatAppenderWithoutTag : UnsynchronizedAppenderBase<ILoggingEvent>() {
             // prevent stack traces from showing up in the tag
             // (which could lead to very confusing error messages)
             if (layout is PatternLayout) {
-                val pattern = this.tagEncoder!!.pattern
+                val pattern = it.pattern
                 if (!pattern.contains("%nopex")) {
-                    this.tagEncoder!!.stop()
-                    this.tagEncoder!!.pattern = "$pattern%nopex"
-                    this.tagEncoder!!.start()
+                    it.stop()
+                    it.pattern = "$pattern%nopex"
+                    it.start()
                 }
 
                 layout.setPostCompileProcessor(null)
@@ -65,7 +64,6 @@ class LogcatAppenderWithoutTag : UnsynchronizedAppenderBase<ILoggingEvent>() {
      * the event to be logged
      */
     public override fun append(event: ILoggingEvent) {
-
         if (!isStarted) {
             return
         }
@@ -105,12 +103,10 @@ class LogcatAppenderWithoutTag : UnsynchronizedAppenderBase<ILoggingEvent>() {
         // format tag based on encoder layout; truncate if max length
         // exceeded (only necessary for isLoggable(), which throws
         // IllegalArgumentException)
-        var tag = if (this.tagEncoder != null) this.tagEncoder!!.layout.doLayout(event) else event.loggerName
+        var tag = tagEncoder?.layout?.doLayout(event) ?: event.loggerName
         if (checkLoggable && tag.length > MAX_TAG_LENGTH) {
             tag = tag.substring(0, MAX_TAG_LENGTH - 1) + "*"
         }
         return tag
     }
-
-
 }
