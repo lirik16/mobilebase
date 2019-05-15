@@ -46,6 +46,10 @@ abstract class BaseViewModel<S : BaseViewState>(
     abstract fun getErrorProperty(): KProperty1<S, LocalizedException?>
 
     protected abstract fun S.copyWithError(localizedException: LocalizedException?): S
+
+    protected fun handleError(error: Throwable) {
+        errors.sendError(error)
+    }
 }
 
 private fun createMainScopeWithErrorsStream(errorsStream: ErrorsStream): CoroutineContext {
