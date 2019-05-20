@@ -36,7 +36,7 @@ class LogbackInitializer(private val context: Context) : Initializer {
             if (DEVELOPER_MODE) {
                 addAppender(createFileAppender(loggerContext))
             }
-            level = Level.ALL
+            level = if (DEVELOPER_MODE) Level.ALL else Level.OFF
             isAdditive = false
         }
     }
